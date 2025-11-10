@@ -1,0 +1,9 @@
+{
+  "name": "saycast-hud",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'HUD dev server TBD'",
+    "build": "echo 'HUD build TBD'"
+  }
+}

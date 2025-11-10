@@ -118,3 +118,17 @@
 4. Begin capturing your existing Raycast command dictionary into `config/commands.yaml`.
 
 Let me know if you want me to start scaffolding the workspace or dive deeper into Wispr Flow integration details.
+
+## Development setup (current status)
+1. Install dependencies: `pnpm install` (installs workspace packages; Swift helper uses SwiftPM separately).
+2. Copy `.env.example` → `.env` and fill `WISPR_API_KEY`, `RAYCAST_SCRIPTS_DIR` (defaults to `~/raycast-scripts`), and optional `OPENAI_API_KEY`.
+3. Run the core dev harness (text-input simulation for now): `pnpm dev`.  
+   - Use `SAYCAST_DRY_RUN=1 pnpm dev` to prevent actual Raycast/script execution while testing matching logic.  
+   - Type a phrase like `left half` or `quicktime recording` at the `sayCast>` prompt to exercise the matcher/executor.
+4. Build the native helper placeholder (optional while we wire IPC):
+   ```bash
+   cd apps/native-helper
+   swift build
+   ```
+   Enable it from the core service with `START_NATIVE_HELPER=1 pnpm dev` once compiled; you’ll see heartbeat logs coming from the helper.
+5. HUD package + full audio/IPC wiring are stubbed for now; implementation will follow after the hotkey/audio loop is ready.
