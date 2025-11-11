@@ -93,14 +93,16 @@ export class WisprClient extends EventEmitter<WisprClientEvents> {
       return;
     }
 
+    const wavPacket = this.createWavPacket(chunk);
+
     const message = {
       type: "append",
       position: this.packetsSent,
       audio_packets: {
-        packets: [chunk.data],
+        packets: [wavPacket],
         volumes: [1],
         packet_duration: chunk.packetDuration,
-        audio_encoding: "pcm_s16le",
+        audio_encoding: "wav",
         byte_encoding: "base64",
         sample_rate: chunk.sampleRate
       }
@@ -142,5 +144,32 @@ export class WisprClient extends EventEmitter<WisprClientEvents> {
     } catch (error) {
       logger.error({ raw, err: error }, "Failed to parse Wispr message");
     }
+  }
+
+  private createWavPacket(chunk: HelperAudioChunk): string {
+    const audioBuffer = Buffer.from(chunk.data, "base64");
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = chunk.sampleRate * numChannels * (bitsPerSample / 8);
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataSize = audioBuffer.length;
+    const riffChunkSize = 36 + dataSize;
+
+    const header = Buffer.alloc(44);
+    header.write("RIFF", 0);
+    header.writeUInt32LE(riffChunkSize, 4);
+    header.write("WAVE", 8);
+    header.write("fmt ", 12);
+    header.writeUInt32LE(16, 16); // Subchunk1 size for PCM
+    header.writeUInt16LE(1, 20); // Audio format PCM
+    header.writeUInt16LE(numChannels, 22);
+    header.writeUInt32LE(chunk.sampleRate, 24);
+    header.writeUInt32LE(byteRate, 28);
+    header.writeUInt16LE(blockAlign, 32);
+    header.writeUInt16LE(bitsPerSample, 34);
+    header.write("data", 36);
+    header.writeUInt32LE(dataSize, 40);
+
+    return Buffer.concat([header, audioBuffer]).toString("base64");
   }
 }
