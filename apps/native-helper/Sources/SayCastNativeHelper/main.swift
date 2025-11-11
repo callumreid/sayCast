@@ -59,6 +59,7 @@ final class FnShiftMonitor {
     private var controlPressed = false
     private var optionPressed = false
     private var sPressed = false
+    private var commandPressed = false
 
     init(emitter: EventEmitter, audioStream: AudioStream) {
         self.emitter = emitter
@@ -103,6 +104,7 @@ final class FnShiftMonitor {
         let flags = event.flags
         controlPressed = flags.contains(.maskControl)
         optionPressed = flags.contains(.maskAlternate)
+        commandPressed = flags.contains(.maskCommand)
 
         if type == .keyDown || type == .keyUp {
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -111,7 +113,9 @@ final class FnShiftMonitor {
             }
         }
 
-        let shouldListen = controlPressed && optionPressed && sPressed
+        let comboA = controlPressed && optionPressed && sPressed
+        let comboB = controlPressed && commandPressed
+        let shouldListen = comboA || comboB
 
         if shouldListen && !listening {
             listening = true

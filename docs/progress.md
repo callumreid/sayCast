@@ -33,6 +33,7 @@ _Last updated: 2025-11-10_
    - Architecture/plan docs previously captured in `README.md` & `plan.md`.
 
 - Added `.env` discovery that looks in both the current working directory and repo root, so `WISPR_API_KEY` can live in the root `.env` file without duplicating settings.
+- Raycast CLI resolution now supports `RAYCAST_CLI_PATH` env var plus common install paths, surfacing a clear error if the binary is missing (prevents ENOENT when running window-management commands).
 
 ## Current Limitations / TODO Highlights
 - Need to confirm whether Wispr expects WAV headers per chunk or raw PCM (currently sending raw PCM16 at 16 kHz).

@@ -7,6 +7,14 @@
     "build": "pnpm -r run build",
     "build:packages": "pnpm --filter '@saycast/*' run build",
     "lint": "pnpm -r run lint",
-    "dev": "pnpm run build:packages && pnpm --filter core-service dev"
+    "dev": "pnpm run build:packages && pnpm --filter core-service dev",
+    "prepare:saycast": "pnpm run build:packages && cd apps/native-helper && swift build",
+    "dev:core": "START_NATIVE_HELPER=1 pnpm --filter core-service dev",
+    "dev:hud": "pnpm --filter saycast-hud dev",
+    "start:saycast": "pnpm run prepare:saycast && concurrently --names core,hud \"pnpm run dev:core\" \"pnpm run dev:hud\"",
+    "start": "pnpm run start:saycast"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

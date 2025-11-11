@@ -122,6 +122,7 @@ Let me know if you want me to start scaffolding the workspace or dive deeper int
 ## Development setup (current status)
 1. Install dependencies: `pnpm install` (installs workspace packages; Swift helper uses SwiftPM separately).
 2. Copy `.env.example` → `.env` and fill `WISPR_API_KEY`, `RAYCAST_SCRIPTS_DIR` (defaults to `~/raycast-scripts`), and optional `OPENAI_API_KEY`.
+   - If the Raycast CLI isn’t on your `$PATH`, set `RAYCAST_CLI_PATH` to the full binary (Raycast → Preferences → Advanced → “Install Command Line Tool”).
 3. Run the core dev harness (text-input simulation for now): `pnpm dev`.  
    - Use `SAYCAST_DRY_RUN=1 pnpm dev` to prevent actual Raycast/script execution while testing matching logic.  
    - Type a phrase like `left half` or `quicktime recording` at the `sayCast>` prompt to exercise the matcher/executor.
@@ -138,7 +139,12 @@ Let me know if you want me to start scaffolding the workspace or dive deeper int
    - Hold `Control + Option` and press `S` (keep the combo held) to start streaming audio; transcripts + command matches log to the console, and matched commands will execute (disable with `SAYCAST_DRY_RUN=1` if needed).  
    - macOS will prompt for Accessibility + Microphone permissions the first time; approve them so the hotkey/audio capture works.
    - This path currently streams 16 kHz PCM chunks; HUD/visual feedback and additional error handling are still in progress.
-7. Optional HUD overlay (visual mic + transcript):  
-   - In a separate terminal, run `pnpm --filter saycast-hud dev`.  
-   - The frameless window attaches to the top-right of your primary display and connects to the core WebSocket (`SAYCAST_HUD_PORT`, default `48123`).  
-   - Keep this window open while the core service is running to see live listening/transcript/command status feedback.
+7. One-command workflow (recommended):  
+   - From repo root run `pnpm start` (alias for `pnpm run start:saycast`).  
+   - This will:
+     1. Rebuild shared TypeScript packages.  
+     2. Rebuild the Swift helper via `swift build`.  
+     3. Launch the core service with `START_NATIVE_HELPER=1`.  
+     4. Launch the Electron HUD overlay (port `SAYCAST_HUD_PORT`, default `48123`).  
+   - `Ctrl+C` now shuts everything down cleanly (helper, Wispr socket, HUD server).  
+   - Use `SAYCAST_HUD_PORT` to change the HUD websocket port if needed.
