@@ -49,6 +49,14 @@ export const buildDefaultCommands = (scriptsDir) => {
             kind: "script",
             target: resolveScript("transcribe.sh"),
             description: "Transcribe audio/video file via Whisper CLI"
+        },
+        {
+            id: "saycast-test",
+            phrases: ["say cast test", "saycast test", "run test"],
+            tags: ["custom", "test"],
+            kind: "script",
+            target: resolveScript("sayCastTest.sh"),
+            description: "Test command for verifying sayCast voice pipeline"
         }
     ];
 };

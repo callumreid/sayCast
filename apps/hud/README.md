@@ -1,8 +1,19 @@
-# sayCast HUD (placeholder)
+# sayCast HUD
 
-Electron/Vite overlay will live here. Initial scaffold will include:
-- Frameless always-on-top window anchored to the top-right corner.
-- IPC bridge to the core service for transcript + status updates.
-- Tailwind/Chakra-free minimal styling, with color states (idle/listening/success/error).
+Lightweight Electron overlay that connects to the core service via WebSocket
+(`ws://localhost:48123` by default) and displays:
+- microphone indicator (green when Control+Option+S is held, red on errors)
+- live transcript text (partial + final) from Wispr
+- most recent command status (“matched”, “executed”, or “failed”)
 
-Implementation pending once the core pipeline + native helper are wired.
+## Development
+
+```bash
+pnpm install        # already run at repo root
+pnpm --filter saycast-hud dev
+```
+
+This launches a frameless window pinned to the top-right corner of the primary
+display. Run it alongside `START_NATIVE_HELPER=1 pnpm dev` in the repo root.
+Use `SAYCAST_HUD_PORT` to change the listening port if needed (set in both the
+core service env and before running the HUD).

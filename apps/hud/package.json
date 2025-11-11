@@ -2,8 +2,13 @@
   "name": "saycast-hud",
   "version": "0.1.0",
   "private": true,
+  "type": "commonjs",
+  "main": "main.js",
   "scripts": {
-    "dev": "echo 'HUD dev server TBD'",
-    "build": "echo 'HUD build TBD'"
+    "dev": "electron .",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "electron": "^31.2.0"
   }
 }

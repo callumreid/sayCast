@@ -5,7 +5,7 @@
 - Assumption: your Raycast extensions and command dictionaries exist outside this repo; we will integrate by invoking the Raycast CLI or AppleScript hooks.
 
 ## Goals
-1. While `Fn+Shift` are held, capture live microphone audio, transcribe it via Wispr Flow (preferred) or OpenAI Speech-to-Text, and stream the transcript.
+1. While `Control + Option + S` are held, capture live microphone audio, transcribe it via Wispr Flow (preferred) or OpenAI Speech-to-Text, and stream the transcript.
 2. Render the live transcript in a small HUD anchored to the top-right of the screen.  
    - Default text color = neutral.  
    - Turn green when the utterance maps to a Raycast command, red with “Unable to Map” when it does not.  
@@ -21,7 +21,7 @@
                                            [Command Mapper & Raycast Runner]
 ```
 
-- **Native helper (Swift)**: a lightweight menubar-less agent that installs a CGEvent tap to watch for `Fn` (`kCGEventFlagMaskSecondaryFn`) + `Shift` and streams mic audio via `AVAudioEngine`. Communicates with the Node service over stdio/IPC (`protobuf` or `JSON lines`). Keeping this piece native ensures reliable modifier detection and low-latency audio capture, both awkward in pure Node.
+- **Native helper (Swift)**: a lightweight menubar-less agent that installs a CGEvent tap to watch for `Control + Option + S` and streams mic audio via `AVAudioEngine`. Communicates with the Node service over stdio/IPC (`protobuf` or `JSON lines`). Keeping this piece native ensures reliable modifier detection and low-latency audio capture, both awkward in pure Node.
 - **Node/TypeScript core**: orchestrates state transitions, sends audio chunks to Wispr/OpenAI, keeps the phrase dictionary, performs fuzzy matching, and triggers Raycast commands. Bundled with `ts-node`/`esbuild` for rapid iteration.
 - **HUD overlay**: a frameless always-on-top window rooted in the top-right corner (Electron + React/Vite). Receives streaming transcript updates via IPC from the Node process. Color-codes text and shows status icons (listening, success, failure).
 - **Speech backend**: 
@@ -34,7 +34,7 @@
 
 ## Core components
 1. **Key & audio capture daemon**
-   - Watches `kCGEventFlagsChanged` events to detect simultaneous `Fn + Shift`.
+   - Watches `kCGEventFlagsChanged` events to detect when `Control + Option` are held and `S` is pressed.
    - When pressed: starts `AVAudioEngine` → PCM16 chunks at 16 kHz, 1 channel, frames of ~20 ms.
    - Sends `{event:"start"}`, `{event:"chunk", data:base64}`, `{event:"stop"}` messages to Node.
    - On release or timeout (>8 s idle) stops capture and flushes.
@@ -125,7 +125,7 @@ Let me know if you want me to start scaffolding the workspace or dive deeper int
 3. Run the core dev harness (text-input simulation for now): `pnpm dev`.  
    - Use `SAYCAST_DRY_RUN=1 pnpm dev` to prevent actual Raycast/script execution while testing matching logic.  
    - Type a phrase like `left half` or `quicktime recording` at the `sayCast>` prompt to exercise the matcher/executor.
-4. Build the native helper placeholder (optional while we wire IPC):
+4. Build the native helper:
    ```bash
    cd apps/native-helper
    swift build
@@ -135,5 +135,10 @@ Let me know if you want me to start scaffolding the workspace or dive deeper int
 6. **Experimental end-to-end loop (no HUD yet):**
    - Ensure `.env` has `WISPR_API_KEY` and that `raycast` CLI plus your scripts are accessible.
    - Build the helper (`swift build` inside `apps/native-helper`), then in repo root run `START_NATIVE_HELPER=1 pnpm dev`.
-   - Hold `Fn + Shift` to start streaming audio; transcripts + command matches log to the console, and matched commands will execute (disable with `SAYCAST_DRY_RUN=1` if needed).  
+   - Hold `Control + Option` and press `S` (keep the combo held) to start streaming audio; transcripts + command matches log to the console, and matched commands will execute (disable with `SAYCAST_DRY_RUN=1` if needed).  
+   - macOS will prompt for Accessibility + Microphone permissions the first time; approve them so the hotkey/audio capture works.
    - This path currently streams 16 kHz PCM chunks; HUD/visual feedback and additional error handling are still in progress.
+7. Optional HUD overlay (visual mic + transcript):  
+   - In a separate terminal, run `pnpm --filter saycast-hud dev`.  
+   - The frameless window attaches to the top-right of your primary display and connects to the core WebSocket (`SAYCAST_HUD_PORT`, default `48123`).  
+   - Keep this window open while the core service is running to see live listening/transcript/command status feedback.

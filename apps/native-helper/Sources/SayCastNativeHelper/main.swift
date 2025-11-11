@@ -1,5 +1,6 @@
 import ApplicationServices
 import AVFoundation
+import Carbon.HIToolbox.Events
 import Foundation
 
 struct HelperEvent: Codable {
@@ -55,6 +56,9 @@ final class FnShiftMonitor {
     private var listening = false
     private let emitter: EventEmitter
     private let audioStream: AudioStream
+    private var controlPressed = false
+    private var optionPressed = false
+    private var sPressed = false
 
     init(emitter: EventEmitter, audioStream: AudioStream) {
         self.emitter = emitter
@@ -95,10 +99,19 @@ final class FnShiftMonitor {
 
     private func handleEvent(type: CGEventType, event: CGEvent) {
         guard type == .flagsChanged || type == .keyDown || type == .keyUp else { return }
+
         let flags = event.flags
-        let fnPressed = flags.contains(.maskSecondaryFn)
-        let shiftPressed = flags.contains(.maskShift)
-        let shouldListen = fnPressed && shiftPressed
+        controlPressed = flags.contains(.maskControl)
+        optionPressed = flags.contains(.maskAlternate)
+
+        if type == .keyDown || type == .keyUp {
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            if keyCode == kVK_ANSI_S {
+                sPressed = type == .keyDown
+            }
+        }
+
+        let shouldListen = controlPressed && optionPressed && sPressed
 
         if shouldListen && !listening {
             listening = true
@@ -128,6 +141,7 @@ final class AudioStream {
     private let targetSampleRate: Double = 16_000
     private var tapInstalled = false
     private var isRunning = false
+    private var inputSampleRate: Double = 44_100
 
     init(emitter: EventEmitter) {
         self.emitter = emitter
@@ -136,13 +150,11 @@ final class AudioStream {
     private func installTapIfNeeded() {
         guard !tapInstalled else { return }
         let inputNode = engine.inputNode
-        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: targetSampleRate, channels: 1, interleaved: false) else {
-            emitter.emit(HelperEvent(type: .error, message: "Unable to create audio format"))
-            return
-        }
-        let bufferSize = AVAudioFrameCount(targetSampleRate * chunkDuration)
+        let inputFormat = inputNode.inputFormat(forBus: 0)
+        inputSampleRate = inputFormat.sampleRate
+        let bufferSize = AVAudioFrameCount(inputSampleRate * chunkDuration)
 
-        inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: format) { [weak self] buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: inputFormat) { [weak self] buffer, _ in
             self?.handle(buffer: buffer)
         }
         tapInstalled = true
@@ -167,18 +179,42 @@ final class AudioStream {
 
     private func handle(buffer: AVAudioPCMBuffer) {
         guard let floatChannelData = buffer.floatChannelData else { return }
-        let channelPointer = floatChannelData.pointee
         let frameLength = Int(buffer.frameLength)
-        var pcm = [Int16](repeating: 0, count: frameLength)
-        for idx in 0..<frameLength {
-            let clamped = max(-1.0, min(1.0, channelPointer[idx]))
-            pcm[idx] = Int16(clamped * Float(Int16.max))
-        }
+        guard frameLength > 0 else { return }
+        let channelPointer = floatChannelData.pointee
+        let pcm = convertToPCM16(channelPointer: channelPointer, frameLength: frameLength)
         let data = pcm.withUnsafeBufferPointer { Data(buffer: $0) }
         let base64 = data.base64EncodedString()
-        let packetDuration = Double(frameLength) / targetSampleRate
+        let packetDuration = Double(pcm.count) / targetSampleRate
         let payload = AudioPayload(data: base64, packetDuration: packetDuration, sampleRate: targetSampleRate)
         emitter.emit(HelperEvent(type: .audioChunk, payload: payload))
+    }
+
+    private func convertToPCM16(channelPointer: UnsafePointer<Float>, frameLength: Int) -> [Int16] {
+        if abs(inputSampleRate - targetSampleRate) < 0.1 {
+            var pcm = [Int16](repeating: 0, count: frameLength)
+            for idx in 0..<frameLength {
+                let clamped = max(-1.0, min(1.0, channelPointer[idx]))
+                pcm[idx] = Int16(clamped * Float(Int16.max))
+            }
+            return pcm
+        }
+
+        let ratio = targetSampleRate / inputSampleRate
+        let outputLength = max(1, Int(Double(frameLength) * ratio))
+        var pcm = [Int16](repeating: 0, count: outputLength)
+        for idx in 0..<outputLength {
+            let srcPosition = Double(idx) / ratio
+            let lowerIndex = min(frameLength - 1, Int(floor(srcPosition)))
+            let upperIndex = min(frameLength - 1, lowerIndex + 1)
+            let fraction = srcPosition - Double(lowerIndex)
+            let lowerSample = channelPointer[lowerIndex]
+            let upperSample = channelPointer[upperIndex]
+            let interpolated = lowerSample + Float(fraction) * (upperSample - lowerSample)
+            let clamped = max(-1.0, min(1.0, interpolated))
+            pcm[idx] = Int16(clamped * Float(Int16.max))
+        }
+        return pcm
     }
 }
 

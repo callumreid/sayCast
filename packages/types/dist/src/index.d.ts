@@ -37,3 +37,23 @@ export interface HelperAudioChunk {
     packetDuration: number;
     sampleRate: number;
 }
+export type HudMessage = {
+    type: "state";
+    state: string;
+    source?: string;
+} | {
+    type: "transcript";
+    text: string;
+    final: boolean;
+} | {
+    type: "command";
+    status: "matched" | "executed" | "failed";
+    commandId?: string;
+    text?: string;
+} | {
+    type: "error";
+    message: string;
+} | {
+    type: "listening";
+    active: boolean;
+};
