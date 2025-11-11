@@ -6,24 +6,24 @@ export const buildDefaultCommands = (scriptsDir) => {
             id: "window-left-half",
             phrases: ["left half", "snap left", "window left"],
             tags: ["window", "raycast"],
-            kind: "raycast-cli",
-            target: "window-management.left-half",
+            kind: "script",
+            target: resolveScript("window-left-half.sh"),
             description: "Snap active window to the left half of the display"
         },
         {
             id: "window-right-half",
             phrases: ["right half", "snap right", "window right"],
             tags: ["window", "raycast"],
-            kind: "raycast-cli",
-            target: "window-management.right-half",
+            kind: "script",
+            target: resolveScript("window-right-half.sh"),
             description: "Snap active window to the right half of the display"
         },
         {
             id: "window-maximize",
             phrases: ["full screen", "maximize window", "make it big"],
             tags: ["window", "raycast"],
-            kind: "raycast-cli",
-            target: "window-management.maximize",
+            kind: "script",
+            target: resolveScript("window-maximize.sh"),
             description: "Maximize the active window"
         },
         {

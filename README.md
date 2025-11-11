@@ -1,3 +1,5 @@
+![Horse A Horse](horse_a_horse.png)
+
 # sayCast Architecture Plan
 
 ## Repository status
