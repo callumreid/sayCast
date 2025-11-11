@@ -132,3 +132,8 @@ Let me know if you want me to start scaffolding the workspace or dive deeper int
    ```
    Enable it from the core service with `START_NATIVE_HELPER=1 pnpm dev` once compiled; you’ll see heartbeat logs coming from the helper.
 5. HUD package + full audio/IPC wiring are stubbed for now; implementation will follow after the hotkey/audio loop is ready.
+6. **Experimental end-to-end loop (no HUD yet):**
+   - Ensure `.env` has `WISPR_API_KEY` and that `raycast` CLI plus your scripts are accessible.
+   - Build the helper (`swift build` inside `apps/native-helper`), then in repo root run `START_NATIVE_HELPER=1 pnpm dev`.
+   - Hold `Fn + Shift` to start streaming audio; transcripts + command matches log to the console, and matched commands will execute (disable with `SAYCAST_DRY_RUN=1` if needed).  
+   - This path currently streams 16 kHz PCM chunks; HUD/visual feedback and additional error handling are still in progress.

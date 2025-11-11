@@ -1,15 +1,22 @@
 {
   "name": "@saycast/config",
   "version": "0.1.0",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -b tsconfig.json",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@saycast/types": "workspace:*",
     "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.1"
   }
 }

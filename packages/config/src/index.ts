@@ -1,10 +1,25 @@
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import type { RuntimeConfig } from "@saycast/types";
 import { buildDefaultCommands } from "./defaultCommands";
 
-dotenv.config();
+const loadEnvFiles = () => {
+  const ownDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(ownDir, "../../../.env")
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      dotenv.config({ path: candidate, override: false });
+    }
+  }
+};
+
+loadEnvFiles();
 
 const ensureDir = (dir: string) => {
   if (!fs.existsSync(dir)) {

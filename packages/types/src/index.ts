@@ -30,8 +30,15 @@ export interface WisprAppendPacket {
   durationSec: number;
 }
 
-export type WisprSessionEvent =
-  | { type: "auth" }
-  | { type: "partial"; text: string }
-  | { type: "final"; text: string }
-  | { type: "error"; error: Error };
+export interface WisprClientEvents {
+  auth: () => void;
+  partial: (text: string) => void;
+  final: (text: string) => void;
+  error: (error: Error) => void;
+}
+
+export interface HelperAudioChunk {
+  data: string;
+  packetDuration: number;
+  sampleRate: number;
+}
