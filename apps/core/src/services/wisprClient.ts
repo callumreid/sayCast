@@ -125,6 +125,19 @@ export class WisprClient extends EventEmitter<WisprClientEvents> {
     this.sessionActive = false;
   }
 
+  async close(): Promise<void> {
+    if (!this.socket) {
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      this.socket?.once("close", () => resolve());
+      this.socket?.close(1000, "shutdown");
+    });
+    this.socket = null;
+    this.isReady = false;
+    this.sessionActive = false;
+  }
+
   private handleMessage(raw: string) {
     try {
       const data = JSON.parse(raw);

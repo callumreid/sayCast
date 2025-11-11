@@ -39,4 +39,12 @@ export class HudServer {
       }
     }
   }
+
+  stop() {
+    if (!this.wss) {
+      return;
+    }
+    this.wss.close(() => logger.info("HUD ws server closed"));
+    this.wss = null;
+  }
 }

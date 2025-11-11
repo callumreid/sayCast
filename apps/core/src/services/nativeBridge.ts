@@ -52,7 +52,9 @@ export class NativeBridge extends EventEmitter<NativeBridgeEvents> {
   }
 
   stop() {
-    this.child?.kill();
+    if (this.child && !this.child.killed) {
+      this.child.kill();
+    }
     this.child = null;
     this.buffer = "";
   }

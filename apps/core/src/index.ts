@@ -133,6 +133,20 @@ async function bootstrap() {
   if (process.env.START_NATIVE_HELPER === "1") {
     nativeBridge.start();
   }
+
+  const shutdown = async () => {
+    logger.info("Shutting down sayCast core…");
+    hud.broadcast({ type: "state", state: "shutting-down" });
+    hud.stop();
+    nativeBridge.stop();
+    await wispr.close().catch((error) => {
+      logger.warn({ err: error }, "Failed to close Wispr socket");
+    });
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 bootstrap().catch((error) => {
