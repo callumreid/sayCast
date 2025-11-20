@@ -148,3 +148,7 @@ Let me know if you want me to start scaffolding the workspace or dive deeper int
      4. Launch the Electron HUD overlay (port `SAYCAST_HUD_PORT`, default `48123`).  
    - `Ctrl+C` now shuts everything down cleanly (helper, Wispr socket, HUD server).  
    - Use `SAYCAST_HUD_PORT` to change the HUD websocket port if needed.
+  
+
+
+![Hacking Beavis](https://media4.giphy.com/media/v1.Y2lkPTQ3MDI4ZmE4ZXkxajd6MzFzNzZvcTBmeGljbm00em8wd2s1OWR6NjNkOGJuYzUzcCZlcD12MV9naWZzJmN0PWc/kD6daMoWcySbKZ3ncf/giphy.gif)
