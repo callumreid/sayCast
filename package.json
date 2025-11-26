@@ -11,8 +11,8 @@
     "prepare:saycast": "pnpm run build:packages && cd apps/native-helper && swift build",
     "dev:core": "START_NATIVE_HELPER=1 pnpm --filter core-service dev",
     "dev:hud": "pnpm --filter saycast-hud dev",
-    "start:saycast": "pnpm run prepare:saycast && concurrently --names core,hud \"pnpm run dev:core\" \"pnpm run dev:hud\"",
-    "start": "pnpm run start:saycast"
+    "start:saycast": "pnpm run prepare:saycast && concurrently --kill-others --kill-others-on-fail --names core,hud --prefix-colors cyan,magenta \"pnpm run dev:core\" \"pnpm run dev:hud\"",
+    "start": "bash scripts/dev-with-port-cleanup.sh"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
