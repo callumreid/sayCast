@@ -1,0 +1,112 @@
+name: build-release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    env:
+      NODE_ENV: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect version
+        id: version
+        run: |
+          echo "value=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.12.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Build core service
+        run: pnpm --filter core-service run build
+
+      - name: Build native helper
+        run: |
+          cd apps/native-helper
+          swift build --configuration release --arch arm64
+          swift build --configuration release --arch x86_64
+          mkdir -p ../../dist/native-helper
+          lipo -create .build/arm64-apple-macosx/release/SayCastNativeHelper .build/x86_64-apple-macosx/release/SayCastNativeHelper -output ../../dist/native-helper/SayCastNativeHelper
+
+      - name: Prepare release artifacts
+        run: pnpm exec node scripts/release/create-release-artifacts.mjs
+
+      - name: Install signing certificate
+        if: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_BASE64 != '' && secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD != '' }}
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/signing_certificate.p12"
+          echo "$CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          KEYCHAIN_PATH="$RUNNER_TEMP/saycast.keychain"
+          security create-keychain -p action "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$CERTIFICATE_PASSWORD" -A
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+          security unlock-keychain -p action "$KEYCHAIN_PATH"
+
+      - name: Sign native helper
+        if: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION != '' }}
+        env:
+          SIGN_IDENTITY: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+          VERSION_VALUE: ${{ steps.version.outputs.value }}
+        run: |
+          codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "dist/release/sayCast-$VERSION_VALUE-universal/bin/SayCastNativeHelper"
+
+      - name: Notarize universal archive
+        if: ${{ secrets.APPLE_NOTARIZATION_USER != '' && secrets.APPLE_NOTARIZATION_TEAM_ID != '' && secrets.APPLE_NOTARIZATION_PASSWORD != '' }}
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.APPLE_NOTARIZATION_USER }}
+          NOTARY_TEAM_ID: ${{ secrets.APPLE_NOTARIZATION_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
+          VERSION_VALUE: ${{ steps.version.outputs.value }}
+        run: |
+          xcrun notarytool submit "dist/release/sayCast-$VERSION_VALUE-universal.zip" --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sayCast-${{ steps.version.outputs.value }}
+          path: |
+            dist/release/sayCast-${{ steps.version.outputs.value }}-universal.tar.gz
+            dist/release/sayCast-${{ steps.version.outputs.value }}-universal.zip
+            dist/release/sayCast-${{ steps.version.outputs.value }}-sha256.txt
+            dist/release/manifest.json
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: sayCast ${{ steps.version.outputs.value }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            Automated release for sayCast ${{ steps.version.outputs.value }}.
+            - Artifact: sayCast-${{ steps.version.outputs.value }}-universal.tar.gz
+            - Artifact: sayCast-${{ steps.version.outputs.value }}-universal.zip
+            - Checksums: sayCast-${{ steps.version.outputs.value }}-sha256.txt
+          files: |
+            dist/release/sayCast-${{ steps.version.outputs.value }}-universal.tar.gz
+            dist/release/sayCast-${{ steps.version.outputs.value }}-universal.zip
+            dist/release/sayCast-${{ steps.version.outputs.value }}-sha256.txt
+

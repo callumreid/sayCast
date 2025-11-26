@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sayCast Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .settings-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .settings-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .settings-header h1 {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .close-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .settings-tabs {
+      display: flex;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-btn:hover {
+      background: #f5f5f5;
+    }
+
+    .settings-content {
+      padding: 24px;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .form-label .hint {
+      font-weight: 400;
+      color: #999;
+      font-size: 12px;
+      display: block;
+      margin-top: 4px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 100px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    button {
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-danger {
+      background: #f44747;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #d63030;
+    }
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .alert-info {
+      background: #e3f2fd;
+      color: #1565c0;
+      border-left: 4px solid #1976d2;
+    }
+
+    .alert-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-left: 4px solid #43a047;
+    }
+
+    .alert-error {
+      background: #ffebee;
+      color: #c62828;
+      border-left: 4px solid #e53935;
+    }
+
+    .command-item {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .command-item-content {
+      flex: 1;
+    }
+
+    .command-item-phrase {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .command-item-action {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .command-item-btn {
+      background: #e0e0e0;
+      border: none;
+      color: #333;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+
+    .command-item-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .test-audio-btn {
+      background: #2196f3;
+      color: white;
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .test-audio-btn:hover {
+      background: #1976d2;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.connected {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status-badge.disconnected {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 20px 0;
+    }
+
+    .import-export {
+      display: flex;
+      gap: 12px;
+    }
+
+    .import-export button {
+      flex: 1;
+    }
+
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider-group input[type="range"] {
+      flex: 1;
+    }
+
+    .slider-value {
+      min-width: 40px;
+      text-align: right;
+      font-weight: 600;
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <div class="settings-header">
+      <h1>⚙️ sayCast Settings</h1>
+      <button class="close-btn" id="closeBtn">×</button>
+    </div>
+
+    <div class="settings-tabs">
+      <button class="tab-btn active" data-tab="api">API Keys</button>
+      <button class="tab-btn" data-tab="commands">Commands</button>
+      <button class="tab-btn" data-tab="audio">Audio</button>
+      <button class="tab-btn" data-tab="general">General</button>
+    </div>
+
+    <div class="settings-content">
+      <!-- API Keys Tab -->
+      <div class="tab-panel active" id="api-tab">
+        <div id="apiStatus" class="alert alert-info" style="display: none;">
+          <span>ℹ️</span>
+          <div id="apiStatusMsg"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Wispr Flow API Key
+            <span class="hint">For speech-to-text transcription</span>
+          </label>
+          <input type="password" class="form-input" id="wispr-api-key" placeholder="wspr_*****">
+          <button class="btn-secondary" style="margin-top: 8px;" onclick="togglePasswordField('wispr-api-key')">Show</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            OpenAI API Key (Optional)
+            <span class="hint">Used as fallback when Wispr is unavailable</span>
+          </label>
+          <input type="password" class="form-input" id="openai-api-key" placeholder="sk-*****">
+          <button class="btn-secondary" style="margin-top: 8px;" onclick="togglePasswordField('openai-api-key')">Show</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Wispr Language
+            <span class="hint">Primary language for transcription</span>
+          </label>
+          <select class="form-input" id="wispr-language">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+          </select>
+        </div>
+
+        <button class="btn-primary" onclick="testWispr()">Test Wispr Connection</button>
+        <button class="btn-primary" style="margin-top: 12px;" onclick="saveApiSettings()">Save API Settings</button>
+      </div>
+
+      <!-- Commands Tab -->
+      <div class="tab-panel" id="commands-tab">
+        <div id="commandsStatus" class="alert alert-info" style="display: none;">
+          <span>ℹ️</span>
+          <div id="commandsStatusMsg"></div>
+        </div>
+
+        <h3 style="margin-bottom: 16px;">Custom Commands</h3>
+        <div id="commandsList" style="margin-bottom: 16px;"></div>
+
+        <button class="btn-primary" onclick="openCommandEditor()">Add New Command</button>
+
+        <div class="divider"></div>
+
+        <h3 style="margin-bottom: 16px;">Manage Commands</h3>
+        
+        <label class="form-label">
+          Import/Export Commands (YAML)
+        </label>
+        <div class="import-export">
+          <button class="btn-secondary" onclick="exportCommands()">Export</button>
+          <button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import</button>
+          <input type="file" id="importFile" accept=".yaml,.yml,.json" style="display: none;" onchange="importCommands(event)">
+        </div>
+
+        <label class="form-label" style="margin-top: 16px;">
+          Edit Commands (Advanced)
+        </label>
+        <textarea class="form-input" id="commands-yaml" placeholder="phrases:
+  - left half
+  - snap left
+action: raycast
+command: raycast-tools.window-left"></textarea>
+
+        <button class="btn-primary" style="margin-top: 12px;" onclick="saveCustomCommands()">Save Commands</button>
+      </div>
+
+      <!-- Audio Tab -->
+      <div class="tab-panel" id="audio-tab">
+        <div class="form-group">
+          <label class="form-label">
+            Microphone Input Device
+            <span class="hint">Select your input device</span>
+          </label>
+          <select class="form-input" id="mic-device">
+            <option>Built-in Microphone</option>
+            <option>External USB Microphone</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Recording Sensitivity
+            <span class="hint">Higher = more sensitive</span>
+          </label>
+          <div class="slider-group">
+            <input type="range" id="sensitivity" min="0" max="100" value="50" onchange="updateSliderValue(this)">
+            <span class="slider-value" id="sensitivityValue">50%</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Silence Timeout (seconds)
+            <span class="hint">Stop listening after silence</span>
+          </label>
+          <div class="slider-group">
+            <input type="range" id="silenceTimeout" min="1" max="10" value="3" onchange="updateSliderValue(this)">
+            <span class="slider-value" id="silenceTimeoutValue">3s</span>
+          </div>
+        </div>
+
+        <button class="test-audio-btn" onclick="testMicrophone()">🎙️ Test Microphone</button>
+
+        <button class="btn-primary" style="margin-top: 12px;" onclick="saveAudioSettings()">Save Audio Settings</button>
+      </div>
+
+      <!-- General Tab -->
+      <div class="tab-panel" id="general-tab">
+        <div class="form-group">
+          <label class="form-label">
+            Hotkey Combination
+            <span class="hint">Modifier keys + trigger key</span>
+          </label>
+          <div class="form-row">
+            <div>
+              <label style="display: block; font-size: 12px; margin-bottom: 6px;">Modifiers</label>
+              <select class="form-input" id="hotkey-modifiers">
+                <option>Control + Option</option>
+                <option>Control + Command</option>
+                <option>Shift + Command</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 12px; margin-bottom: 6px;">Trigger Key</label>
+              <select class="form-input" id="hotkey-trigger">
+                <option>S</option>
+                <option>V</option>
+                <option>Space</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" id="auto-start" checked>
+            Auto-start on login
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <input type="checkbox" id="show-hud" checked>
+            Show HUD overlay
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Fuzzy Match Threshold (%)
+            <span class="hint">Minimum confidence to match commands</span>
+          </label>
+          <div class="slider-group">
+            <input type="range" id="matchThreshold" min="50" max="95" value="80" onchange="updateSliderValue(this)">
+            <span class="slider-value" id="matchThresholdValue">80%</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3 style="margin-bottom: 16px;">Logs & Debug</h3>
+        <button class="btn-secondary" onclick="openLogs()">View Logs</button>
+        <button class="btn-secondary" style="margin-top: 12px;" onclick="exportLogs()">Export Logs</button>
+
+        <div class="divider"></div>
+
+        <h3 style="margin-bottom: 16px;">App Info</h3>
+        <div style="font-size: 13px; color: #666; margin-bottom: 16px;">
+          <div><strong>Version:</strong> <span id="appVersion">0.2.0</span></div>
+          <div><strong>Status:</strong> <span class="status-badge connected">Connected</span></div>
+        </div>
+
+        <button class="btn-primary" onclick="saveGeneralSettings()">Save General Settings</button>
+        <button class="btn-danger" style="margin-top: 12px;" onclick="resetSettings()">Reset to Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
+

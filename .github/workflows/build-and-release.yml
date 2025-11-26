@@ -1,0 +1,139 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+env:
+  PNPM_VERSION: 9.12.0
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Build Swift helper
+        run: |
+          cd apps/native-helper
+          swift build -c release
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build Electron app (Core service)
+        run: |
+          cd apps/core
+          pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: Build Electron HUD
+        run: |
+          cd apps/hud
+          pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: Create release artifacts
+        run: |
+          mkdir -p dist
+          
+          # Swift helper (universal binary)
+          mkdir -p saycast-${{ steps.version.outputs.VERSION }}/bin
+          cp apps/native-helper/.build/release/SayCastNativeHelper saycast-${{ steps.version.outputs.VERSION }}/bin/
+          
+          # Core and HUD binaries
+          cp -r apps/core/dist saycast-${{ steps.version.outputs.VERSION }}/core
+          cp -r apps/hud/dist saycast-${{ steps.version.outputs.VERSION }}/hud
+          cp apps/hud/main.js saycast-${{ steps.version.outputs.VERSION }}/
+          
+          # Configuration template
+          cp .env.example saycast-${{ steps.version.outputs.VERSION }}/.env.example
+          
+          # License and docs
+          cp README.md saycast-${{ steps.version.outputs.VERSION }}/
+          cp LICENSE saycast-${{ steps.version.outputs.VERSION }}/ 2>/dev/null || true
+          
+          # Create tarball
+          tar -czf dist/sayCast-${{ steps.version.outputs.VERSION }}-universal.tar.gz saycast-${{ steps.version.outputs.VERSION }}/
+          
+          # Calculate SHA256
+          shasum -a 256 dist/sayCast-${{ steps.version.outputs.VERSION }}-universal.tar.gz > dist/SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/sayCast-${{ steps.version.outputs.VERSION }}-universal.tar.gz
+            dist/SHA256SUMS
+          draft: false
+          prerelease: false
+          body: |
+            ## sayCast v${{ steps.version.outputs.VERSION }}
+            
+            ### Installation via Homebrew
+            ```bash
+            brew tap yourusername/homebrew-saycast
+            brew install saycast
+            ```
+            
+            ### Changes
+            See CHANGELOG.md for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew Formula
+        run: |
+          # Get the download URL and SHA256
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/sayCast-${{ steps.version.outputs.VERSION }}-universal.tar.gz"
+          SHA256=$(shasum -a 256 dist/sayCast-${{ steps.version.outputs.VERSION }}-universal.tar.gz | awk '{print $1}')
+          
+          echo "Download URL: $DOWNLOAD_URL"
+          echo "SHA256: $SHA256"
+          
+          # This step would typically:
+          # 1. Clone the homebrew-saycast tap repo
+          # 2. Update Formula/saycast.rb with new URL and SHA256
+          # 3. Commit and push
+          # For now, we'll output instructions for manual update
+          
+          cat > homebrew-update.txt <<EOF
+          To update Homebrew formula, edit the tap repo Formula/saycast.rb:
+          
+          url "$DOWNLOAD_URL"
+          sha256 "$SHA256"
+          EOF
+          
+          cat homebrew-update.txt
+
+      - name: Upload artifacts for inspection
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
