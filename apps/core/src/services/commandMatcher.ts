@@ -11,6 +11,7 @@ const normalize = (input: string) =>
 export interface MatchResult {
   command: VoiceCommandDefinition;
   score: number;
+  args?: string[];
 }
 
 export class CommandMatcher {
@@ -33,6 +34,22 @@ export class CommandMatcher {
     let top: MatchResult | null = null;
 
     for (const command of this.commands) {
+      if (command.matchType === "prefix") {
+        for (const phrase of command.phrases) {
+          const normalizedPhrase = normalize(phrase);
+          if (normalizedUtterance.startsWith(normalizedPhrase)) {
+            const remainder = normalizedUtterance.slice(normalizedPhrase.length).trim();
+            if (remainder.length > 0) {
+              const score = 0.95;
+              if (!top || score > top.score) {
+                top = { command, score, args: [remainder] };
+              }
+            }
+          }
+        }
+        continue;
+      }
+
       for (const phrase of command.phrases) {
         const normalizedPhrase = normalize(phrase);
         const score = this.computeScore(normalizedUtterance, normalizedPhrase);

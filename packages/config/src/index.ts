@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import type { RuntimeConfig } from "@saycast/types";
 import { buildDefaultCommands } from "./defaultCommands";
+import { customDictionary } from "./customDictionary";
 
 const loadEnvFiles = () => {
   const ownDir = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +48,7 @@ export const loadRuntimeConfig = (): RuntimeConfig => {
     wisprApiKey,
     openAIApiKey,
     raycastScriptsDir: scriptsDir,
-    commands: buildDefaultCommands(scriptsDir)
+    commands: buildDefaultCommands(scriptsDir),
+    customDictionary
   };
 };

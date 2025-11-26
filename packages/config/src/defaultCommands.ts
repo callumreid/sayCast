@@ -124,6 +124,15 @@ export const buildDefaultCommands = (scriptsDir: string): VoiceCommandDefinition
       kind: "script",
       target: resolveScript("sayCastTest.sh"),
       description: "Test command for verifying sayCast voice pipeline"
+    },
+    {
+      id: "open-repo",
+      phrases: ["open repo", "go to repo"],
+      matchType: "prefix",
+      tags: ["custom", "dev"],
+      kind: "script",
+      target: resolveScript("open-repo.sh"),
+      description: "Open a repository in iTerm"
     }
   ];
 };

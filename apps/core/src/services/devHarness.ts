@@ -44,9 +44,9 @@ export class DevHarness {
         return;
       }
 
-      logger.info({ match: match.command.id, score: match.score }, "Matched command");
+      logger.info({ match: match.command.id, score: match.score, args: match.args }, "Matched command");
       try {
-        await this.runner.run(match.command);
+        await this.runner.run(match.command, match.args);
         logger.info({ command: match.command.id }, "Command execution complete");
       } catch (error) {
         logger.error({ err: error }, "Command execution failed");

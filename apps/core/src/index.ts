@@ -18,7 +18,10 @@ async function bootstrap() {
   const session = new SessionStateMachine();
   const audioPipeline = new AudioPipeline();
   const hud = new HudServer();
-  const dictionaryContext = config.commands.flatMap((command) => command.phrases);
+  const dictionaryContext = [
+    ...config.commands.flatMap((command) => command.phrases),
+    ...(config.customDictionary ?? [])
+  ];
   let lastExecutedTranscript = "";
 
   try {
@@ -118,11 +121,11 @@ async function bootstrap() {
       return;
     }
 
-    logger.info({ transcript: normalized, command: match.command.id }, "Executing command from voice transcript");
+    logger.info({ transcript: normalized, command: match.command.id, args: match.args }, "Executing command from voice transcript");
     hud.broadcast({ type: "command", status: "matched", commandId: match.command.id, text: normalized });
 
     try {
-      await runner.run(match.command);
+      await runner.run(match.command, match.args);
       hud.broadcast({ type: "command", status: "executed", commandId: match.command.id, text: normalized });
     } catch (error) {
       logger.error({ err: error, command: match.command.id }, "Failed to execute command from transcript");

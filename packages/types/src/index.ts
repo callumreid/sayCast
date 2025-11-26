@@ -9,6 +9,8 @@ export interface VoiceCommandDefinition {
   tags?: string[];
   /** Execution strategy */
   kind: ExecutionKind;
+  /** Optional match strategy (exact vs prefix for arg capture) */
+  matchType?: "exact" | "prefix";
   /** Target command (Raycast command ID, script path, etc.) */
   target: string;
   /** Optional constant arguments to pass along */
@@ -22,6 +24,7 @@ export interface RuntimeConfig {
   openAIApiKey?: string;
   raycastScriptsDir: string;
   commands: VoiceCommandDefinition[];
+  customDictionary?: string[];
 }
 
 export interface WisprAppendPacket {

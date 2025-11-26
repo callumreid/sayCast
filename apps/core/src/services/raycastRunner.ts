@@ -9,23 +9,23 @@ export class RaycastRunner {
   private readonly dryRun = process.env.SAYCAST_DRY_RUN === "1";
   private raycastBinary: string | null = process.env.RAYCAST_CLI_PATH ?? null;
 
-  async run(command: VoiceCommandDefinition): Promise<void> {
+  async run(command: VoiceCommandDefinition, dynamicArgs?: string[]): Promise<void> {
     if (this.dryRun) {
-      logger.info({ command: command.id }, "[dry-run] Would execute command");
+      logger.info({ command: command.id, dynamicArgs }, "[dry-run] Would execute command");
       return;
     }
 
-    logger.info({ command: command.id }, "Executing command");
+    logger.info({ command: command.id, dynamicArgs }, "Executing command");
 
     switch (command.kind) {
       case "raycast-cli":
         await this.runRaycastCommand(command.target, command.args ?? {});
         break;
       case "script":
-        await this.runScript(command.target);
+        await this.runScript(command.target, dynamicArgs);
         break;
       case "applescript":
-        await this.runAppleScript(command.target);
+        await this.runAppleScript(command.target, dynamicArgs);
         break;
       default:
         logger.warn({ command }, "Unknown command kind");
@@ -43,14 +43,14 @@ export class RaycastRunner {
     await execa(binary, cliArgs, { stdio: "inherit" });
   }
 
-  private async runScript(scriptPath: string): Promise<void> {
+  private async runScript(scriptPath: string, args: string[] = []): Promise<void> {
     await access(scriptPath, constants.X_OK);
-    await execa(scriptPath, { stdio: "inherit" });
+    await execa(scriptPath, args, { stdio: "inherit" });
   }
 
-  private async runAppleScript(scriptPath: string): Promise<void> {
+  private async runAppleScript(scriptPath: string, args: string[] = []): Promise<void> {
     await access(scriptPath, constants.R_OK);
-    await execa("osascript", [scriptPath], { stdio: "inherit" });
+    await execa("osascript", [scriptPath, ...args], { stdio: "inherit" });
   }
 
   private async resolveRaycastBinary(): Promise<string> {
