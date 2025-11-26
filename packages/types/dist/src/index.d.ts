@@ -22,6 +22,7 @@ export interface RuntimeConfig {
     openAIApiKey?: string;
     raycastScriptsDir: string;
     commands: VoiceCommandDefinition[];
+    customDictionary?: string[];
 }
 export interface WisprAppendPacket {
     audio: string;

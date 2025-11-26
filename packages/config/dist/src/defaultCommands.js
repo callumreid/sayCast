@@ -130,6 +130,24 @@ export const buildDefaultCommands = (scriptsDir) => {
             kind: "script",
             target: resolveScript("open-repo.sh"),
             description: "Open a repository in iTerm"
+        },
+        {
+            id: "open-application",
+            phrases: ["open application", "open app", "launch"],
+            matchType: "prefix",
+            tags: ["custom", "system"],
+            kind: "script",
+            target: resolveScript("open-app-maximized.sh"),
+            description: "Open application and maximize it"
+        },
+        {
+            id: "close-application",
+            phrases: ["close application", "close app", "exit app", "quit app"],
+            matchType: "prefix",
+            tags: ["custom", "system"],
+            kind: "script",
+            target: resolveScript("close-app.sh"),
+            description: "Close/Quit an application"
         }
     ];
 };

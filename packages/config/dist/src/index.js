@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import { buildDefaultCommands } from "./defaultCommands";
+import { customDictionary } from "./customDictionary";
 const loadEnvFiles = () => {
     const ownDir = path.dirname(fileURLToPath(import.meta.url));
     const candidates = [
@@ -37,6 +38,7 @@ export const loadRuntimeConfig = () => {
         wisprApiKey,
         openAIApiKey,
         raycastScriptsDir: scriptsDir,
-        commands: buildDefaultCommands(scriptsDir)
+        commands: buildDefaultCommands(scriptsDir),
+        customDictionary
     };
 };
