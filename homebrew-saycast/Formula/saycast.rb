@@ -1,8 +1,8 @@
 cask "saycast" do
   version "0.1.0"
-  sha256 :no_check  # Update this with actual SHA256 after first release
+  sha256 "68b79467ff737c9192b640773862ba1b56cce38fae31be9a27d19ac83b815198"
 
-  url "https://github.com/callumreid/sayCast/releases/download/v#{version}/sayCast-#{version}-arm64.dmg"
+  url "https://github.com/callumreid/sayCast/releases/download/v#{version}/sayCast.dmg"
   name "sayCast"
   desc "Voice commands for your Mac"
   homepage "https://github.com/callumreid/sayCast"
