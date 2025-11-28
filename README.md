@@ -1,156 +1,182 @@
 ![Horse A Horse](horse_a_horse.png)
 
-# sayCast Architecture Plan
+# sayCast
 
-## Repository status
-- No existing Raycast utility code was found in `/Users/callum2/bronson/sayCast/sayCast` (only `.git` metadata), so we start from a clean slate.
-- Assumption: your Raycast extensions and command dictionaries exist outside this repo; we will integrate by invoking the Raycast CLI or AppleScript hooks.
+Voice commands for your Mac. Hold a hotkey, speak a command, and watch it execute.
 
-## Goals
-1. While `Control + Option + S` are held, capture live microphone audio, transcribe it via Wispr Flow (preferred) or OpenAI Speech-to-Text, and stream the transcript.
-2. Render the live transcript in a small HUD anchored to the top-right of the screen.  
-   - Default text color = neutral.  
-   - Turn green when the utterance maps to a Raycast command, red with “Unable to Map” when it does not.  
-3. When the hotkey is released (or a timeout triggers), execute the mapped Raycast command with best-effort recovery and feedback.
-4. Launch automatically on login eventually; during development it can be started from the terminal.
+[![GitHub release](https://img.shields.io/github/v/release/callumreid/sayCast)](https://github.com/callumreid/sayCast/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## High-level architecture
+---
+
+## ✨ Features
+
+- 🎤 **Voice-controlled** - Speak commands naturally
+- ⚡ **Fast transcription** - Powered by Wispr Flow
+- 🪟 **Window management** - "left half", "maximize", "center third"
+- 🚀 **App control** - "open app Chrome", "close app Slack"
+- 🔧 **Extensible** - Add your own commands via shell scripts
+
+---
+
+## 📦 Installation
+
+### Download (Recommended)
+
+1. Download the latest `.dmg` from [Releases](https://github.com/callumreid/sayCast/releases)
+2. Open the DMG and drag **sayCast** to Applications
+3. Launch from Applications
+
+### Homebrew (Coming Soon)
+
+```bash
+brew tap callumreid/saycast
+brew install --cask saycast
 ```
-[Global Hotkey + Audio Helper (Swift)]  <--event/pcm-->  [Node/TS Core Service]
-                                                       /         \
-                                           [Wispr/OpenAI STT]   [HUD Overlay (Electron/Vite/TS)]
-                                                       \
-                                           [Command Mapper & Raycast Runner]
+
+### Build from Source
+
+```bash
+git clone https://github.com/callumreid/sayCast.git
+cd sayCast
+pnpm install
+cd apps/hud
+npm run bundle
+npm run package
+# App is in: out/sayCast-darwin-arm64/sayCast.app
 ```
 
-- **Native helper (Swift)**: a lightweight menubar-less agent that installs a CGEvent tap to watch for `Control + Option + S` and streams mic audio via `AVAudioEngine`. Communicates with the Node service over stdio/IPC (`protobuf` or `JSON lines`). Keeping this piece native ensures reliable modifier detection and low-latency audio capture, both awkward in pure Node.
-- **Node/TypeScript core**: orchestrates state transitions, sends audio chunks to Wispr/OpenAI, keeps the phrase dictionary, performs fuzzy matching, and triggers Raycast commands. Bundled with `ts-node`/`esbuild` for rapid iteration.
-- **HUD overlay**: a frameless always-on-top window rooted in the top-right corner (Electron + React/Vite). Receives streaming transcript updates via IPC from the Node process. Color-codes text and shows status icons (listening, success, failure).
-- **Speech backend**: 
-  - Primary: Wispr Flow streaming endpoint (assuming authenticated HTTP/WebSocket API; we will reuse your existing dictionary/common words prompt).
-  - Fallback: OpenAI Speech-to-Text (Realtime or `audio.transcriptions`) with on-device caching to stay within model limits.
-- **Command execution layer**: 
-  - Preferred: `raycast run <extension.command>` via the Raycast CLI.
-  - Fallback: AppleScript (`osascript -e 'tell application "Raycast" to ...'`) for commands that lack CLI hooks.
-  - Support argument templates and simple slot filling (e.g., “open notion docs”).
+---
 
-## Core components
-1. **Key & audio capture daemon**
-   - Watches `kCGEventFlagsChanged` events to detect when `Control + Option` are held and `S` is pressed.
-   - When pressed: starts `AVAudioEngine` → PCM16 chunks at 16 kHz, 1 channel, frames of ~20 ms.
-   - Sends `{event:"start"}`, `{event:"chunk", data:base64}`, `{event:"stop"}` messages to Node.
-   - On release or timeout (>8 s idle) stops capture and flushes.
+## 🚀 Quick Start
 
-2. **Speech pipeline**
-   - Node service multiplexes PCM chunks to the active STT backend.
-   - For Wispr Flow: maintain a long-lived streaming session, send your dictionary/context at session start.
-   - Keep incremental transcript + final phrase; expose to HUD via IPC.
-   - Retry with OpenAI if Wispr is unavailable; surface errors in HUD (“Transcriber offline”).
+### First Launch
 
-3. **Command mapper**
-   - Config file `config/commands.yaml` describing:
-     ```yaml
-     - phrases: ["left half", "snap left"]
-       raycast: "raycast-tools.window-left"
-       args: {}
-     ```
-   - Uses fuzzy matching (`Fuse.js`) with score thresholds.
-   - Supports slot extraction via regex or simple NLU templates for commands needing parameters.
-   - Emits `match-none` or `match-ambiguous` events for HUD + audio cues.
+1. **Open sayCast** from Applications (or double-click the .app)
+2. **Grant permissions** when prompted:
+   - ✅ Accessibility (for hotkey detection)
+   - ✅ Microphone (for voice capture)
+3. **Enter your Wispr API key** in the onboarding wizard
+   - Get one at [wisprflow.ai](https://wisprflow.ai)
 
-4. **Raycast runner**
-   - Executes `raycast run <command> --arg value` via `child_process.spawn`.
-   - Times out (>3 s) and reports status back to HUD.
-   - Optional AppleScript fallback when CLI fails (wrap in try/catch).
+### Using sayCast
 
-5. **HUD overlay**
-   - Electron window anchored to `(screenWidth - width - margin, margin)`.
-   - Displays:
-     - live transcript text
-     - tiny dot for `idle/listening/mapped/error`
-     - optional Raycast icon + command name on success
-   - Auto-hides after 1.5 s of idle.
-   - Provide theme-aware colors and a “Unable to Map” message in red.
+1. **Hold `Ctrl + Cmd`** (or `Ctrl + Option + S`)
+2. **Speak your command** (e.g., "left half", "open app Chrome")
+3. **Release the keys** — command executes!
 
-6. **State machine**
-   - States: `idle -> initializing -> listening -> transcribing -> matched -> executing -> success/error -> idle`.
-   - Deterministic transitions make it easier to reason about stuck hotkeys.
+### Menu Bar
 
-7. **Logging & recovery**
-   - Structured logs to `~/Library/Logs/sayCast/*.log`.
-   - Expose a `--debug` flag to mirror logs to stdout.
-   - Add guard so releasing modifiers always cancels the session.
+Look for the **sayCast icon** (small circle) in your menu bar:
+- Gray = Idle
+- Green = Listening
+- Click for: Preferences, Quit
 
-8. **Permissions & startup**
-   - On first launch, prompt for microphone + accessibility (for CGEvent tap) via helper.
-   - Provide `scripts/install-launch-agent.ts` to drop a LaunchAgent plist in `~/Library/LaunchAgents/com.saycast.agent.plist`.
+---
 
-## Implementation phases
-1. **Phase 0 – Skeleton**
-   - Initialize Node/TypeScript workspace (pnpm + ts-node), add ESLint/Prettier.
-   - Scaffold Electron HUD (hidden until IPC message).
-   - Build Swift helper CLI that only watches `Fn+Shift` and logs events.
+## 🎯 Voice Commands
 
-2. **Phase 1 – Hotkey loop**
-   - Wire helper → Node via stdio (Hotkey start/stop events).
-   - Update HUD colors based on `listening` state.
+### Window Management
 
-3. **Phase 2 – Audio + STT**
-   - Stream PCM from helper, feed into Wispr Flow.
-   - Display partial transcripts in HUD.
-   - Implement OpenAI fallback switch.
+| Say this | Action |
+|----------|--------|
+| "left half" / "snap left" | Snap window to left half |
+| "right half" / "snap right" | Snap window to right half |
+| "maximize" / "full screen" | Maximize window |
+| "center third" | Center third of screen |
+| "left third" / "right third" | Side thirds |
+| "top half" / "bottom half" | Vertical halves |
+| "window larger" / "window smaller" | Resize window |
 
-4. **Phase 3 – Command mapping + Raycast execution**
-   - Load YAML command map, use fuzzy matching.
-   - Trigger Raycast CLI, show success/failure colors.
-   - Add small sound cues on success/error.
+### App Control
 
-5. **Phase 4 – UX polish & resilience**
-   - Timeouts, error banners, reconnection logic.
-   - Logging, config hot reload, command testing harness.
-   - LaunchAgent script + documentation.
+| Say this | Action |
+|----------|--------|
+| "open app [name]" | Open/focus an application |
+| "close app [name]" | Close an application |
+| "open repo [name]" | Open repository in iTerm |
 
-6. **Phase 5 – Stretch**
-   - Optional: local Whisper fallback, analytics on most-used phrases, in-app editor for command map.
+### Utilities
 
-## Immediate next steps
-1. Initialize the monorepo structure (`packages/native-helper`, `apps/core-service`, `apps/hud`).
-2. Draft the Swift helper prototype that detects `Fn+Shift` and emits start/stop JSON events.
-3. Set up the Node core service scaffold with IPC subscriptions and stub Wispr/OpenAI clients.
-4. Begin capturing your existing Raycast command dictionary into `config/commands.yaml`.
+| Say this | Action |
+|----------|--------|
+| "incognito" | Open Chrome incognito |
+| "quicktime" / "start recording" | Start QuickTime recording |
 
-Let me know if you want me to start scaffolding the workspace or dive deeper into Wispr Flow integration details.
+---
 
-## Development setup (current status)
-1. Install dependencies: `pnpm install` (installs workspace packages; Swift helper uses SwiftPM separately).
-2. Copy `.env.example` → `.env` and fill `WISPR_API_KEY`, `RAYCAST_SCRIPTS_DIR` (defaults to `~/raycast-scripts`), and optional `OPENAI_API_KEY`.
-   - If the Raycast CLI isn’t on your `$PATH`, set `RAYCAST_CLI_PATH` to the full binary (Raycast → Preferences → Advanced → “Install Command Line Tool”).
-3. Run the core dev harness (text-input simulation for now): `pnpm dev`.  
-   - Use `SAYCAST_DRY_RUN=1 pnpm dev` to prevent actual Raycast/script execution while testing matching logic.  
-   - Type a phrase like `left half` or `quicktime recording` at the `sayCast>` prompt to exercise the matcher/executor.
-4. Build the native helper:
-   ```bash
-   cd apps/native-helper
-   swift build
-   ```
-   Enable it from the core service with `START_NATIVE_HELPER=1 pnpm dev` once compiled; you’ll see heartbeat logs coming from the helper.
-5. HUD package + full audio/IPC wiring are stubbed for now; implementation will follow after the hotkey/audio loop is ready.
-6. **Experimental end-to-end loop (no HUD yet):**
-   - Ensure `.env` has `WISPR_API_KEY` and that `raycast` CLI plus your scripts are accessible.
-   - Build the helper (`swift build` inside `apps/native-helper`), then in repo root run `START_NATIVE_HELPER=1 pnpm dev`.
-   - Hold `Control + Option` and press `S` (keep the combo held) to start streaming audio; transcripts + command matches log to the console, and matched commands will execute (disable with `SAYCAST_DRY_RUN=1` if needed).  
-   - macOS will prompt for Accessibility + Microphone permissions the first time; approve them so the hotkey/audio capture works.
-   - This path currently streams 16 kHz PCM chunks; HUD/visual feedback and additional error handling are still in progress.
-7. One-command workflow (recommended):  
-   - From repo root run `pnpm start` (alias for `pnpm run start:saycast`).  
-   - This will:
-     1. Rebuild shared TypeScript packages.  
-     2. Rebuild the Swift helper via `swift build`.  
-     3. Launch the core service with `START_NATIVE_HELPER=1`.  
-     4. Launch the Electron HUD overlay (port `SAYCAST_HUD_PORT`, default `48123`).  
-   - `Ctrl+C` now shuts everything down cleanly (helper, Wispr socket, HUD server).  
-   - Use `SAYCAST_HUD_PORT` to change the HUD websocket port if needed.
-  
+## ⚙️ Configuration
 
+### Config Location
+
+```
+~/Library/Application Support/sayCast/config.json
+```
+
+### Adding Custom Commands
+
+Place shell scripts in `~/raycast-scripts/` and they'll be available as voice commands.
+
+Example script (`~/raycast-scripts/my-command.sh`):
+```bash
+#!/bin/bash
+# Your automation here
+open -a "Safari"
+```
+
+---
+
+## 🛠 Development
+
+### Prerequisites
+
+- macOS 12+ (Monterey or later)
+- Node.js 18+
+- pnpm 9+
+- Xcode Command Line Tools
+
+### Setup
+
+```bash
+# Install dependencies
+pnpm install
+
+# Development mode
+pnpm start
+
+# Build packaged app
+cd apps/hud
+npm run bundle
+npm run package
+```
+
+### Project Structure
+
+```
+sayCast/
+├── apps/
+│   ├── hud/           # Electron app (HUD + core service)
+│   └── native-helper/ # Swift hotkey/audio capture
+├── packages/
+│   ├── config/        # Shared configuration
+│   └── types/         # TypeScript types
+└── homebrew-saycast/  # Homebrew formula
+```
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Wispr Flow](https://wisprflow.ai) for speech-to-text
+- [Electron](https://electronjs.org) for the app framework
+- [Raycast](https://raycast.com) for inspiration
+
+---
 
 ![Hacking Beavis](https://media4.giphy.com/media/v1.Y2lkPTQ3MDI4ZmE4ZXkxajd6MzFzNzZvcTBmeGljbm00em8wd2s1OWR6NjNkOGJuYzUzcCZlcD12MV9naWZzJmN0PWc/kD6daMoWcySbKZ3ncf/giphy.gif)

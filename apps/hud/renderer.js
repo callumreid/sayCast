@@ -43,7 +43,7 @@
           setIndicator(payload.active);
           setState(payload.active ? 'Listening…' : 'Idle');
           if (!payload.active) {
-            transcriptEl.textContent = 'Hold Ctrl+Option+S…';
+            transcriptEl.textContent = 'Hold Ctrl+Cmd…';
           }
           break;
         case 'transcript':

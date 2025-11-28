@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to sayCast</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e4e4e7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 40px 30px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 20px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #a1a1aa;
+      font-size: 16px;
+    }
+
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 40px;
+    }
+
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3f3f46;
+      transition: all 0.3s;
+    }
+
+    .step-dot.active {
+      background: #6366f1;
+      width: 30px;
+      border-radius: 5px;
+    }
+
+    .step-dot.completed {
+      background: #22c55e;
+    }
+
+    .step-content {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .step-content.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .step-description {
+      color: #a1a1aa;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .permission-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .permission-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .permission-icon.accessibility { background: rgba(99, 102, 241, 0.2); }
+    .permission-icon.microphone { background: rgba(236, 72, 153, 0.2); }
+
+    .permission-info h3 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .permission-info p {
+      font-size: 13px;
+      color: #a1a1aa;
+    }
+
+    .permission-status {
+      margin-left: auto;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .permission-status.granted {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .permission-status.pending {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #e4e4e7;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: #6366f1;
+    }
+
+    .input-group input::placeholder {
+      color: #71717a;
+    }
+
+    .help-link {
+      color: #6366f1;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .help-link:hover {
+      text-decoration: underline;
+    }
+
+    .test-result {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .test-result.success {
+      display: block;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+    }
+
+    .test-result.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    .hotkey-demo {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .hotkey-keys {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .key {
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 60px;
+    }
+
+    .key-plus {
+      display: flex;
+      align-items: center;
+      color: #71717a;
+      font-size: 20px;
+    }
+
+    .demo-status {
+      font-size: 16px;
+      color: #a1a1aa;
+    }
+
+    .demo-status.listening {
+      color: #22c55e;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: auto;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #a1a1aa;
+    }
+
+    .btn-secondary:hover {
+      color: #e4e4e7;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #6366f1;
+    }
+
+    .checkbox-group label {
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .success-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🎤</div>
+      <h1>Welcome to sayCast</h1>
+      <p class="subtitle">Voice commands for your Mac</p>
+    </div>
+
+    <div class="steps">
+      <div class="step-dot active" data-step="1"></div>
+      <div class="step-dot" data-step="2"></div>
+      <div class="step-dot" data-step="3"></div>
+      <div class="step-dot" data-step="4"></div>
+    </div>
+
+    <!-- Step 1: Welcome -->
+    <div class="step-content active" data-step="1">
+      <h2 class="step-title">Let's get you set up</h2>
+      <p class="step-description">
+        sayCast lets you control your Mac with voice commands. 
+        Hold a hotkey, speak a command like "left half" or "maximize", 
+        and watch your windows snap into place.
+      </p>
+      <p class="step-description">
+        We'll need a couple of permissions and your Wispr API key to get started.
+        This only takes about 2 minutes.
+      </p>
+    </div>
+
+    <!-- Step 2: Permissions -->
+    <div class="step-content" data-step="2">
+      <h2 class="step-title">Grant Permissions</h2>
+      <p class="step-description">
+        sayCast needs these permissions to detect hotkeys and hear your voice.
+      </p>
+
+      <div class="permission-card" id="accessibility-card">
+        <div class="permission-icon accessibility">🔐</div>
+        <div class="permission-info">
+          <h3>Accessibility</h3>
+          <p>Detect global hotkeys</p>
+        </div>
+        <span class="permission-status pending" id="accessibility-status">Required</span>
+      </div>
+
+      <div class="permission-card" id="microphone-card">
+        <div class="permission-icon microphone">🎤</div>
+        <div class="permission-info">
+          <h3>Microphone</h3>
+          <p>Capture voice commands</p>
+        </div>
+        <span class="permission-status pending" id="microphone-status">Required</span>
+      </div>
+
+      <button class="btn btn-secondary" onclick="openSystemPreferences()" style="width: 100%; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        Open System Settings →
+      </button>
+    </div>
+
+    <!-- Step 3: API Key -->
+    <div class="step-content" data-step="3">
+      <h2 class="step-title">Connect to Wispr</h2>
+      <p class="step-description">
+        sayCast uses Wispr Flow for fast, accurate voice transcription.
+        Enter your API key below.
+      </p>
+
+      <div class="input-group">
+        <label for="api-key">Wispr API Key</label>
+        <input type="password" id="api-key" placeholder="fl-xxxxxxxxxxxxxxxx">
+      </div>
+
+      <a href="https://wisprflow.ai" target="_blank" class="help-link">
+        Don't have a key? Get one at wisprflow.ai →
+      </a>
+
+      <div class="test-result" id="test-result"></div>
+
+      <button class="btn btn-secondary" onclick="testConnection()" style="width: 100%; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        Test Connection
+      </button>
+    </div>
+
+    <!-- Step 4: Complete -->
+    <div class="step-content" data-step="4">
+      <div style="text-align: center;">
+        <div class="success-icon">🎉</div>
+        <h2 class="step-title">You're all set!</h2>
+        <p class="step-description">
+          sayCast is ready to use. Try it out!
+        </p>
+      </div>
+
+      <div class="hotkey-demo">
+        <div class="hotkey-keys">
+          <span class="key">⌃ Ctrl</span>
+          <span class="key-plus">+</span>
+          <span class="key">⌘ Cmd</span>
+        </div>
+        <p class="demo-status" id="demo-status">Hold the keys and speak a command</p>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="launch-login" checked>
+        <label for="launch-login">Launch sayCast at login</label>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn btn-secondary" id="back-btn" onclick="prevStep()" style="visibility: hidden;">Back</button>
+      <button class="btn btn-primary" id="next-btn" onclick="nextStep()">Get Started</button>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    const totalSteps = 4;
+    let apiKeyValid = false;
+
+    function updateUI() {
+      document.querySelectorAll('.step-content').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.step) === currentStep);
+      });
+
+      document.querySelectorAll('.step-dot').forEach(el => {
+        const step = parseInt(el.dataset.step);
+        el.classList.toggle('active', step === currentStep);
+        el.classList.toggle('completed', step < currentStep);
+      });
+
+      const backBtn = document.getElementById('back-btn');
+      const nextBtn = document.getElementById('next-btn');
+
+      backBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+
+      if (currentStep === totalSteps) {
+        nextBtn.textContent = 'Start Using sayCast';
+      } else if (currentStep === 3) {
+        nextBtn.textContent = 'Continue';
+      } else if (currentStep === 2) {
+        nextBtn.textContent = 'Continue';
+      } else {
+        nextBtn.textContent = 'Get Started';
+      }
+
+      if (currentStep === 2) {
+        checkPermissions();
+      }
+    }
+
+    function nextStep() {
+      if (currentStep === 3 && !apiKeyValid) {
+        const apiKey = document.getElementById('api-key').value.trim();
+        if (!apiKey) {
+          showTestResult('Please enter your Wispr API key', false);
+          return;
+        }
+        saveConfig({ wisprApiKey: apiKey });
+        apiKeyValid = true;
+      }
+
+      if (currentStep === totalSteps) {
+        finishOnboarding();
+        return;
+      }
+
+      if (currentStep < totalSteps) {
+        currentStep++;
+        updateUI();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateUI();
+      }
+    }
+
+    function checkPermissions() {
+      if (window.sayCastOnboarding) {
+        window.sayCastOnboarding.checkPermissions().then(perms => {
+          updatePermissionStatus('accessibility', perms.accessibility);
+          updatePermissionStatus('microphone', perms.microphone);
+        });
+      }
+    }
+
+    function updatePermissionStatus(type, granted) {
+      const status = document.getElementById(`${type}-status`);
+      if (granted) {
+        status.textContent = 'Granted';
+        status.className = 'permission-status granted';
+      } else {
+        status.textContent = 'Required';
+        status.className = 'permission-status pending';
+      }
+    }
+
+    function openSystemPreferences() {
+      if (window.sayCastOnboarding) {
+        window.sayCastOnboarding.openSystemPreferences();
+      }
+    }
+
+    function testConnection() {
+      const apiKey = document.getElementById('api-key').value.trim();
+      if (!apiKey) {
+        showTestResult('Please enter an API key', false);
+        return;
+      }
+
+      showTestResult('Testing connection...', null);
+
+      if (window.sayCastOnboarding) {
+        window.sayCastOnboarding.testWispr(apiKey).then(success => {
+          if (success) {
+            showTestResult('✓ Connected successfully!', true);
+            apiKeyValid = true;
+          } else {
+            showTestResult('✗ Connection failed. Check your API key.', false);
+            apiKeyValid = false;
+          }
+        });
+      } else {
+        setTimeout(() => {
+          showTestResult('✓ Connected successfully!', true);
+          apiKeyValid = true;
+        }, 1000);
+      }
+    }
+
+    function showTestResult(message, success) {
+      const el = document.getElementById('test-result');
+      el.textContent = message;
+      el.className = 'test-result';
+      if (success === true) el.classList.add('success');
+      else if (success === false) el.classList.add('error');
+      el.style.display = 'block';
+    }
+
+    function saveConfig(config) {
+      if (window.sayCastOnboarding) {
+        window.sayCastOnboarding.saveConfig(config);
+      }
+    }
+
+    function finishOnboarding() {
+      const launchAtLogin = document.getElementById('launch-login').checked;
+      if (window.sayCastOnboarding) {
+        window.sayCastOnboarding.finishOnboarding({ launchAtLogin });
+      }
+    }
+
+    setInterval(checkPermissions, 2000);
+    updateUI();
+  </script>
+</body>
+</html>
+
+
